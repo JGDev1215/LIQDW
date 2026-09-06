@@ -1,7 +1,7 @@
 {
   "artifact": "weekly_liquidity_chart.html",
-  "sha256": "cb0f9e2f7b25165d713581e0092d60e18d1850239165d1c6984b4654ee3146ad",
-  "bytes": 13687902,
+  "sha256": "ca843a14661d280502d140c48bc34d2682fb0a047b02d1690d528bcffdeaa846",
+  "bytes": 13690418,
   "validation": "verification.json",
   "scope": "Chart-first presentation, six guided weekly examples, and daily descriptive chart mode from frozen research; no market storage or analytical result changes."
 }

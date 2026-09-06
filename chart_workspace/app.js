@@ -98,6 +98,18 @@ function rangeLevels(){
  return [{id:'rhigh',type:'range',price:hi,i:hiI,formed:state.cursor,label:`${state.k}${unitShort()} HIGH`,side:1},
  {id:'rlow',type:'range',price:lo,i:loI,formed:state.cursor,label:`${state.k}${unitShort()} LOW`,side:-1}];
 }
+function renderHTFLiquidity(){
+ const el=$('htfLiquidity');if(!el)return;
+ const current=bars()[state.cursor],date=current?.[0],weekly=state.tf==='weekly';
+ const source=weekly?bars():(DATA.series[state.asset]?.bars||[]);
+ const candidates=weekly?source.slice(Math.max(0,state.cursor-state.k+1),state.cursor+1).filter(b=>b[5]):source.filter(b=>b[0]<date&&b[5]).slice(-state.k);
+ if(candidates.length<state.k){el.innerHTML='<div class="htf-head"><span>HTF LIQUIDITY PROXY</span><span>INSUFFICIENT DATA</span></div><p class="htf-note">Need a complete prior weekly window before labeling levels.</p>';return;}
+ const hi=Math.max(...candidates.map(b=>b[2])),lo=Math.min(...candidates.map(b=>b[3]));
+ const span=weekly?`${state.k}${unitShort()} range`:`prior ${state.k} completed week${state.k===1?'':'s'}`;
+ const set=(id,priceValue,label,side)=>{el.querySelector(`[data-htf="${id}"]`)?.addEventListener('click',()=>{state.selected={id,type:'fixed',formed:state.cursor,i:state.cursor,price:priceValue,label:`HTF ${label} · ${span}`,dir:side};state.reference={price:scene.p,i:state.cursor,user:false};render();});};
+ el.innerHTML=`<div class="htf-head"><span>HTF LIQUIDITY PROXY</span><span>${weekly?'1W SOURCE':'WEEKLY SOURCE'}</span></div><p class="htf-note">${span} · prior high/low proxy; not proof of resting orders</p><button class="htf-level" data-htf="high"><span><small>BSL · prior high</small><strong>${price(hi)}</strong></span><small>${Number.isFinite(scene.p)?pct((hi-scene.p)/scene.p):'—'}</small></button><button class="htf-level" data-htf="low"><span><small>SSL · prior low</small><strong>${price(lo)}</strong></span><small>${Number.isFinite(scene.p)?pct((lo-scene.p)/scene.p):'—'}</small></button>`;
+ set('high',hi,'BSL',-1);set('low',lo,'SSL',1);
+}
 function makeScene(){
  const b=bars(),c=state.cursor,valid=b[c][5],p=valid?b[c][4]:null,start=Math.max(0,c-state.span+1),cs=getCache();
  const eligible=state.fvgOn?cs.zones.filter(z=>z.i<=c&&qualify(z)):[];
@@ -293,7 +305,7 @@ function render(){
  if(!chart){
   chart=new Chart($('priceChart'),{type:'scatter',data:{datasets:[{data:high,pointRadius:0},{data:low,pointRadius:0}]},plugins:[overlay],options:{responsive:true,maintainAspectRatio:false,animation:false,events:[],devicePixelRatio:Math.min(window.devicePixelRatio||1,2),layout:{padding:{left:14,right:8,top:13,bottom:1}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{type:'linear',min:scene.start-.7,max:scene.right,grid:{color:'#23313e77',drawTicks:false},border:{display:false},ticks:{color:'#758b9e',maxTicksLimit:8,font:{size:10},padding:10,callback(v){const i=Math.round(v);if(i<scene.start||i>state.cursor)return '';const dt=dateAt(i);return dt==='—'?'':new Date(dt+'T12:00:00Z').toLocaleDateString('en-GB',state.tf==='daily'?{day:'2-digit',month:'short',timeZone:'UTC'}:{month:'short',year:'2-digit',timeZone:'UTC'});}}},y:{position:'right',afterFit:scale=>{scale.width=82;},min:scene.min,max:scene.max,border:{display:false},grid:{color:'#23313e88',drawTicks:false},ticks:{color:'#8799a9',maxTicksLimit:9,includeBounds:false,font:{family:'ui-monospace',size:10},padding:10,callback:v=>Math.abs(v)>=1e6?`${number(v/1e6,1)}M`:number(v,Math.abs(v)<2?2:0)}}}}});
  }else{chart.data.datasets[0].data=high;chart.data.datasets[1].data=low;chart.options.scales.x.min=scene.start-.7;chart.options.scales.x.max=scene.right;chart.options.scales.y.min=scene.min;chart.options.scales.y.max=scene.max;chart.update('none');}
- sidebar();renderLesson();const ev=navigationEvents();$('prevEvent').disabled=!ev.some(e=>e.i<state.cursor);$('nextEvent').disabled=!ev.some(e=>e.i>state.cursor);
+ renderHTFLiquidity();sidebar();renderLesson();const ev=navigationEvents();$('prevEvent').disabled=!ev.some(e=>e.i<state.cursor);$('nextEvent').disabled=!ev.some(e=>e.i>state.cursor);
 }
 function navigationEvents(){
  const kind=$('eventKind').value,cs=getCache();
