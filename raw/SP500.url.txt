@@ -1,0 +1,1 @@
+https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=-2208988800&period2=1788652800&interval=1d&events=div%2Csplits

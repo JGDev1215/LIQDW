@@ -1,0 +1,38 @@
+{
+  "created_utc": "2026-09-06T18:26:53.779661+00:00",
+  "cutoff": "2026-09-04",
+  "protocol_sha256": "cb111fcd461348aaf9a00598b590927fea8e26429eb487b0804259ebf9825103",
+  "python": "3.12.14",
+  "numpy": "2.3.5",
+  "pandas": "2.2.3",
+  "raw_files": {
+    "NQ_YAHOO.json": "259fd096b2960cf8f5c0afefb76f2005ace9a5050e804427193871e38ef292a0",
+    "ED.json": "b5bc29ee45c61270c36d791b85df7f01274a7cb32901dd84ed2691b72314134f",
+    "MERCK.json": "c6b9e4e3feddbca2cd654dbcddb8bfe2d069e2a6afc3ad9c31d235f6e9a61456",
+    "BNY.json": "a1224cfd93119f7a6a0325b0881507c22c87b66aedfca617dcb9ea97fd8eada8",
+    "NBB.json": "80e7376bc5f4e12a15804d9c2d6aa4064fe36bea41d3ee53e50899c0413cc1ec",
+    "SP500.json": "6bc5214450888bec90350b9e6adb5bd9ed60e3305812639d64a910ebb979018b",
+    "ORELL.json": "c5cbc005c15d361fa516c1bc4d41d86332e3fe634de70e63f15cc8599117c45c",
+    "NDX.json": "bc254512b6cc5bb2aa11cf8764a6221aac74794718650552c5492a75531b5884",
+    "STORA.json": "e4f5c576eeb99a4a413261d0c4a623d92d9bc7da1cfac473de3de355091d8736",
+    "MPS.json": "64114bfced32347f4de908bbcfcdd51f263e4e6eb16a35d469c752af56e1328a",
+    "WBC.json": "06cd3c149009cce50cf65ec3b0057e2a91b18307308c15289b6a6d8b2a7c29d7",
+    "SUMITOMO.json": "7e97b27b1e96f240879bdb73355dce66aa728b691e9f495b1fdc26513b90320c",
+    "MATSUI.json": "5f250a1b3221d2a8a68002d599cf5f33746d29e3bd36ab50b34d63bdf0193f07",
+    "BMO.json": "c418d6acd7229bd3cd07bc76e45c2538e37b98978703c139389e0d838eef1c9c"
+  },
+  "db_access": "mode=ro; PRAGMA query_only=ON; SELECT only; no source copying",
+  "selected_assets": [
+    "NQ_YAHOO",
+    "NDX",
+    "SP500",
+    "STORA",
+    "MPS",
+    "ORELL",
+    "MATSUI",
+    "SUMITOMO",
+    "BNY",
+    "ED"
+  ],
+  "stock_selection": "Five very old documented operating origins; not certified exhaustive worldwide top-five. BNY and ED are listing-history checks."
+}

@@ -1,0 +1,11 @@
+{
+  "raw_hashes": 14,
+  "independently_matched_events": 79666,
+  "independently_matched_forward_returns": 235399,
+  "summary_rows": 3888,
+  "independent_raw_weekly_aggregations": 50,
+  "fvg_followup_rows_verified": 480,
+  "mechanical_positions_verified": 6852,
+  "benchmark_intervals_spanning_zero": 18,
+  "status": "PASS"
+}

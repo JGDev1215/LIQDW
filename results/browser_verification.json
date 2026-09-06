@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "console_errors": [],
+  "external_requests": 0,
+  "filter_cases": 5,
+  "download_verified": true,
+  "pagination_verified": true,
+  "mobile_width": 390,
+  "charts": [
+    {
+      "id": "coverageChart",
+      "w": 1232,
+      "h": 355,
+      "ymin": 0,
+      "ymax": 10,
+      "points": 11
+    },
+    {
+      "id": "comparisonChart",
+      "w": 582,
+      "h": 290,
+      "ymin": 0,
+      "ymax": 1.2,
+      "points": 3
+    },
+    {
+      "id": "eraChart",
+      "w": 582,
+      "h": 290,
+      "ymin": -1.5,
+      "ymax": 1.5,
+      "points": 3
+    },
+    {
+      "id": "fillChart",
+      "w": 582,
+      "h": 290,
+      "ymin": 0,
+      "ymax": 100,
+      "points": 4
+    },
+    {
+      "id": "exampleChart",
+      "w": 1232,
+      "h": 355,
+      "ymin": 900,
+      "ymax": 1200,
+      "points": 19
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "checks": [
+    {
+      "name": "Frozen inputs unchanged",
+      "status": "PASS",
+      "details": "32 SHA-256 comparisons"
+    },
+    {
+      "name": "20 series × 5 replay dates: no future candles/overlays; independent lifecycle check",
+      "status": "PASS",
+      "details": {
+        "views": 100,
+        "zones": 231,
+        "markers": 2038,
+        "firstSP500": "1962-01-05"
+      }
+    },
+    {
+      "name": "Synthetic fixtures: confirmation, edge, CE, far edge and missing-week censoring",
+      "status": "PASS"
+    },
+    {
+      "name": "Exact between-tick NQ midpoint and early S&P 500 HLC rendering",
+      "status": "PASS"
+    },
+    {
+      "name": "Four-week range uses exactly four completed weeks",
+      "status": "PASS"
+    },
+    {
+      "name": "Event navigation selects the confirmation close; measurement reference stays fixed",
+      "status": "PASS",
+      "details": {
+        "reference": 30141.75,
+        "target": 29148.375,
+        "difference": -993.375
+      }
+    },
+    {
+      "name": "Custom reference click maps to exact chart price",
+      "status": "PASS",
+      "details": {
+        "reference": 25823.463304826248
+      }
+    },
+    {
+      "name": "Zoom, reset, focus, single-step and timed replay controls",
+      "status": "PASS"
+    },
+    {
+      "name": "Evidence, definitions and provenance stay in optional drawers",
+      "status": "PASS"
+    },
+    {
+      "name": "Daily 1D detector matches independent sweep/FVG reference across 11 frozen series",
+      "status": "PASS",
+      "details": [
+        {
+          "id": "NQ_YAHOO",
+          "days": 6599,
+          "events": 8387,
+          "first": "2000-09-18"
+        },
+        {
+          "id": "NDX",
+          "days": 10312,
+          "events": 13640,
+          "first": "1985-10-01"
+        },
+        {
+          "id": "SP500",
+          "days": 16278,
+          "events": 22605,
+          "first": "1962-01-02"
+        },
+        {
+          "id": "STORA",
+          "days": 6770,
+          "events": 7276,
+          "first": "2000-01-03"
+        },
+        {
+          "id": "MPS",
+          "days": 6951,
+          "events": 7175,
+          "first": "1999-06-25"
+        },
+        {
+          "id": "ORELL",
+          "days": 7843,
+          "events": 3421,
+          "first": "1995-11-22"
+        },
+        {
+          "id": "MATSUI",
+          "days": 6394,
+          "events": 5120,
+          "first": "2001-01-04"
+        },
+        {
+          "id": "SUMITOMO",
+          "days": 6656,
+          "events": 6581,
+          "first": "2000-01-04"
+        },
+        {
+          "id": "BNY",
+          "days": 13449,
+          "events": 13187,
+          "first": "1973-05-03"
+        },
+        {
+          "id": "ED",
+          "days": 16278,
+          "events": 13717,
+          "first": "1962-01-02"
+        },
+        {
+          "id": "SP500_MODERN",
+          "days": 11181,
+          "events": 15102,
+          "first": "1982-04-26"
+        }
+      ]
+    },
+    {
+      "name": "1D unavailable local/sensitivity series are disabled without fabrication",
+      "status": "PASS",
+      "details": {
+        "localDisabled": true,
+        "blocked": true,
+        "dailyBlocked": true,
+        "weekly": true
+      }
+    },
+    {
+      "name": "Six guided examples start at confirmation, reveal only on request, and navigate/reset/exit",
+      "status": "PASS",
+      "details": {
+        "lessons": [
+          {
+            "title": "Sell-side liquidity sweep",
+            "confirmation": 984,
+            "revealWeeks": 4
+          },
+          {
+            "title": "Buy-side sweep · counterexample",
+            "confirmation": 538,
+            "revealWeeks": 4
+          },
+          {
+            "title": "Bullish sweep → displacement FVG",
+            "confirmation": 658,
+            "revealWeeks": 7
+          },
+          {
+            "title": "Bearish sweep → displacement FVG",
+            "confirmation": 798,
+            "revealWeeks": 14
+          },
+          {
+            "title": "Partial FVG mitigation",
+            "confirmation": 889,
+            "revealWeeks": 12
+          },
+          {
+            "title": "Same sequence on S&P 500",
+            "confirmation": 1263,
+            "revealWeeks": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "Desktop fits viewport; mobile has no horizontal overflow and a usable chart",
+      "status": "PASS",
+      "details": {
+        "wide": {
+          "width": 1440,
+          "scroll": 1440,
+          "height": 960,
+          "scrollHeight": 960
+        },
+        "mobile": {
+          "width": 390,
+          "scroll": 390,
+          "canvas": {
+            "x": 0,
+            "y": 246,
+            "width": 390,
+            "height": 449,
+            "top": 246,
+            "right": 390,
+            "bottom": 695,
+            "left": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "Offline browser run: zero JavaScript errors and zero external requests",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "screenshots": [
+    "sp500_hlc.png",
+    "desktop_selected.png",
+    "desktop_sweep.png",
+    "daily_nq.png",
+    "guided_example.png",
+    "desktop_final.png",
+    "mobile_final.png",
+    "mobile_example.png"
+  ]
+}
