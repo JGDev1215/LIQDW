@@ -7,6 +7,10 @@ the price chart with minimal reading.
 - [x] A 1D/1W timeframe selector is available. Daily mode uses saved daily
       Yahoo bars and calculates the same concepts over completed sessions.
       Unsupported local-minute and adjusted-only series are disabled in 1D.
+- [x] Daily bars with verified opens render as OHLC candlesticks; HLC-only
+      history remains explicit and does not receive fabricated candle bodies.
+- [x] HTF liquidity output uses completed weekly high/low proxies and refuses
+      to bridge an unavailable weekly bar.
 - [x] Weekly prices occupy the main screen; FVGs, CE, range levels and sweeps
       appear directly on price. Default overlays are bounded to limit clutter.
 - [x] Selected-zone state, exact prices, custom-reference distances and

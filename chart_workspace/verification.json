@@ -124,6 +124,17 @@
       ]
     },
     {
+      "name": "Daily view exposes verified OHLC candlesticks and weekly HTF liquidity output",
+      "status": "PASS",
+      "details": {
+        "validOHLC": true,
+        "header": "2026-09-04O29,505.00H29,704.50L29,468.00C29,565.25",
+        "aria": "Daily OHLC price chart with candlesticks, liquidity sweeps and FVG zones",
+        "legend": "OHLC candles",
+        "htf": "HTF LIQUIDITY PROXYWEEKLY SOURCEprior 1 completed week · prior high/low proxy; not proof of resting ordersBSL · prior high29,811.50+0.83%SSL · prior low28,946.75-2.09%"
+      }
+    },
+    {
       "name": "1D unavailable local/sensitivity series are disabled without fabrication",
       "status": "PASS",
       "details": {

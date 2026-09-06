@@ -12,6 +12,11 @@ the template files are development inputs and are not meant to be opened.
   instruments and SP500_MODERN. It applies the same sweep/FVG geometry over
   completed trading sessions. The two local NQ series and adjusted sensitivity
   series are intentionally disabled in 1D because no frozen daily export exists.
+- Daily bars render as OHLC candlesticks when a verified open is available.
+  HLC-only history uses a wick and close mark without an invented candle body.
+- The HTF Liquidity Proxy card identifies the selected completed weekly range
+  in 1W and the prior continuous completed weekly range in 1D. Its BSL/SSL
+  labels are price-level proxies, not evidence of resting orders.
 - Click a coloured FVG zone, a nearby level, or an amber sweep triangle.
 - Read the selected level's state and price distance in the side panel.
 - Use **Reference**, then click a price, for a custom measurement. This does

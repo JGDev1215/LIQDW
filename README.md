@@ -2,7 +2,7 @@
 
 Interactive offline chart for studying liquidity sweeps and fair value gaps on frozen weekly and daily OHLC data.
 
-Open [`chart_workspace/weekly_liquidity_chart.html`](chart_workspace/weekly_liquidity_chart.html) in a browser. The chart includes guided examples, replay controls, FVG and sweep overlays, daily mode, provenance limits, and weekly-only descriptive backtest evidence.
+Open [`chart_workspace/weekly_liquidity_chart.html`](chart_workspace/weekly_liquidity_chart.html) in a browser. The chart includes guided examples, replay controls, OHLC candlesticks, FVG and sweep overlays, daily mode, higher-timeframe weekly liquidity proxies, provenance limits, and weekly-only descriptive backtest evidence.
 
 ## Rebuild and verify
 

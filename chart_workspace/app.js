@@ -102,8 +102,8 @@ function renderHTFLiquidity(){
  const el=$('htfLiquidity');if(!el)return;
  const current=bars()[state.cursor],date=current?.[0],weekly=state.tf==='weekly';
  const source=weekly?bars():(DATA.series[state.asset]?.bars||[]);
- const candidates=weekly?source.slice(Math.max(0,state.cursor-state.k+1),state.cursor+1).filter(b=>b[5]):source.filter(b=>b[0]<date&&b[5]).slice(-state.k);
- if(candidates.length<state.k){el.innerHTML='<div class="htf-head"><span>HTF LIQUIDITY PROXY</span><span>INSUFFICIENT DATA</span></div><p class="htf-note">Need a complete prior weekly window before labeling levels.</p>';return;}
+ const candidates=weekly?source.slice(Math.max(0,state.cursor-state.k+1),state.cursor+1):source.filter(b=>b[0]<date).slice(-state.k);
+ if(candidates.length<state.k||candidates.some(b=>!b[5])){el.innerHTML='<div class="htf-head"><span>HTF LIQUIDITY PROXY</span><span>INSUFFICIENT DATA</span></div><p class="htf-note">Need a complete, continuous prior weekly window before labeling levels.</p>';return;}
  const hi=Math.max(...candidates.map(b=>b[2])),lo=Math.min(...candidates.map(b=>b[3]));
  const span=weekly?`${state.k}${unitShort()} range`:`prior ${state.k} completed week${state.k===1?'':'s'}`;
  const set=(id,priceValue,label,side)=>{el.querySelector(`[data-htf="${id}"]`)?.addEventListener('click',()=>{state.selected={id,type:'fixed',formed:state.cursor,i:state.cursor,price:priceValue,label:`HTF ${label} · ${span}`,dir:side};state.reference={price:scene.p,i:state.cursor,user:false};render();});};
@@ -183,7 +183,7 @@ function selectionHTML(){
   if(zs==='unknown')details+='<p class="hint">Tracking stops at the first unavailable week.</p>';
  }else if(s.type==='sweep'){
   details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">${s.dir>0?'LOW SWEPT · CLOSED BACK ABOVE':'HIGH SWEPT · CLOSED BACK BELOW'}</span><div class="kv"><span>Confirmed</span><strong>${dateAt(s.i)}</strong></div><p class="hint">Prior ${s.k}-${unit()} ${s.dir>0?'low':'high'}. The opposite range boundary was not breached.</p>`;
- }else details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">FIXED SELECTED LEVEL</span><div class="kv"><span>Selected at close</span><strong>${dateAt(s.formed)}</strong></div><p class="hint">The selected level stays fixed during replay. The range overlay updates with each completed week.</p>`;
+ }else details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">FIXED SELECTED LEVEL</span><div class="kv"><span>Selected at close</span><strong>${dateAt(s.formed)}</strong></div><p class="hint">The selected level stays fixed during replay. The range overlay updates with each completed ${unit()}.</p>`;
  const r=state.reference;
  details+=`<div class="measurement"><div class="kv"><span>${r?.user?'Your reference':'Reference close'}</span><strong>${r?price(r.price):'Set on chart'}</strong></div>${r?`<div class="move">${signed(s.price-r.price)} <small style="font:10px var(--mono)">${['futures','index'].includes(assetClass())?'pts':esc(series().meta.currency)} (${pct((s.price-r.price)/r.price)})</small></div><p class="hint">Distance to ${s.type==='zone'?'50% CE':'selected level'} · ${dateAt(r.i)}</p>`:''}<div class="movement"><span>↔</span><em>${movement(s.price,s.formed)}</em></div></div>`;
  return `<div class="selected-head"><strong>${esc(s.label)}</strong><button id="clearSelection" aria-label="Clear selection">✕</button></div><div class="selected-body">${details}</div>`;
@@ -291,7 +291,7 @@ const overlay={id:'liquidityOverlay',afterDraw(c){
 
 function render(){
  safeSelection();scene=makeScene();const d=series(),b=bars();
- const daily=state.tf==='daily';$('timeframe').value=state.tf;$('brandTf').textContent=daily?'1D':'1W';$('dateLabel').textContent=daily?'Session date':'Week ending';$('footerTf').textContent=daily?'Daily':'Weekly';$('priceChart').setAttribute('aria-label',`${daily?'Daily':'Weekly'} OHLC price chart with ${daily?'candlesticks':'candles'}, liquidity sweeps and FVG zones`);$('candleLegend').textContent=daily?'OHLC candles':'OHLC candles';
+ const daily=state.tf==='daily';$('timeframe').value=state.tf;$('brandTf').textContent=daily?'1D':'1W';$('dateLabel').textContent=daily?'Session date':'Week ending';$('footerTf').textContent=daily?'Daily':'Weekly';$('priceChart').setAttribute('aria-label',`${daily?'Daily':'Weekly'} OHLC price chart with candlesticks, liquidity sweeps and FVG zones`);$('candleLegend').textContent=b.slice(scene.start,state.cursor+1).some(x=>x[5]&&!x[6])?'OHLC candles · HLC marks':'OHLC candles';
  [...$('lookback').options].forEach(o=>o.textContent=`${o.value} ${daily?(o.value==='1'?'session':'sessions'):(o.value==='1'?'week':'weeks')}`);
  $('chartSymbol').textContent=d.meta.symbol;$('chartBasis').textContent=assetClass()==='index'?'cash index':assetClass()==='futures'?'futures continuation':d.meta.currency+' · equity';headerOHLC(state.cursor);
  $('date').min=b[0][0];$('date').max=b.at(-1)[0];$('date').value=b[state.cursor][0];$('timeline').max=b.length-1;$('timeline').value=state.cursor;
@@ -316,11 +316,11 @@ function navigateEvent(dir){stop();const ev=navigationEvents().filter(e=>dir>0?e
 function syncAssetAvailability(){document.querySelectorAll('#asset option').forEach(o=>{o.disabled=state.tf==='daily'&&!DATA.daily[o.value];o.title=o.disabled?'Daily source is not available in the frozen study':'';});}
 function switchAsset(id){
  if(state.tf==='daily'&&!DATA.daily[id]){toast('1D is unavailable for this frozen series');$('asset').value=state.asset;return false;}
- stop();state.asset=id;state.cursor=bars().length-1;state.selected=null;state.reference=null;state.hover=null;state.measure=false;button('measureBtn',false);$('toast').hidden=true;state.span=innerWidth<650?(state.tf==='daily'?78:52):(state.tf==='daily'?126:104);$('asset').value=id;render();return true;
+ stop();state.asset=id;state.cursor=bars().length-1;state.selected=null;state.reference=null;state.hover=null;state.measure=false;button('measureBtn',false);$('toast').hidden=true;$('sidebar').scrollTop=0;state.span=innerWidth<650?(state.tf==='daily'?78:52):(state.tf==='daily'?126:104);$('asset').value=id;render();return true;
 }
 function switchTimeframe(tf){
  if(tf==='daily'&&!DATA.daily[state.asset]){$('timeframe').value=state.tf;toast('Daily candles are unavailable for this local or sensitivity series');return false;}
- exitLesson();stop();state.tf=tf;state.cursor=bars().length-1;state.span=innerWidth<650?(tf==='daily'?78:52):(tf==='daily'?126:104);state.selected=null;state.reference=null;state.hover=null;state.measure=false;button('measureBtn',false);syncAssetAvailability();render();return true;
+ exitLesson();stop();state.tf=tf;state.cursor=bars().length-1;state.span=innerWidth<650?(tf==='daily'?78:52):(tf==='daily'?126:104);state.selected=null;state.reference=null;state.hover=null;state.measure=false;button('measureBtn',false);$('sidebar').scrollTop=0;syncAssetAvailability();render();return true;
 }
 function zoom(f){state.span=clamp(Math.round(state.span*f),20,520);render();}
 function openDrawer(title,html){stop();$('drawerTitle').textContent=title;$('drawerBody').innerHTML=html;$('drawer').showModal();}
@@ -369,7 +369,7 @@ function sources(){
  ${state.asset==='SP500'?'<div class="note"><p>Usable high/low history begins in 1962. Earlier close-copy bars cannot support sweeps or FVGs. Before 26 Apr 1982, opening-price provenance is insufficient: those bars are HLC-only and displacement detection is disabled.</p></div>':state.asset==='SP500_MODERN'?'<div class="note"><p>This modern S&P 500 series begins at the 26 Apr 1982 opening-price reliability boundary. Earlier history is not embedded in this series.</p></div>':''}
  ${assetClass()==='futures'?'<p>Continuation data can contain roll artifacts. These overlays are not a reconstruction of executable individual contracts, spreads or transaction costs.</p>':''}
  ${stock?`<p>${m.origin?`Company origin: <b>${esc(m.origin)}</b>. `:''}The five early-origin companies are research candidates, not a certified world ranking of the oldest continuously traded shares. Company age is not the length of available price history.</p><p>Raw and adjusted sensitivity series are distinct choices. Corporate actions can distort raw prices. No-trade and invalid weeks are omitted from signal detection; the survivors-only sample is not representative of all historical stocks.</p>`:''}
- <p>Blank bands represent invalid or unavailable HLC ${daily?'sessions':'weeks'}. Chart overlays are computed from saved event rows; the original database and analytical results are unchanged.</p>${typeof m.source==='string'&&/^https?:\/\//.test(m.source)?`<p><a href="${esc(m.source)}" target="_blank" rel="noopener">Source snapshot endpoint ↗</a></p>`:''}<p><a href="../weekly_liquidity_backtest.html" target="_blank" rel="noopener">Full research, audit and references ↗</a></p><small>Source data were frozen on 06 Sep 2026. Nothing is streamed live. This chart is reproducible offline.</small>`);
+ <p>Blank bands represent invalid or unavailable HLC ${daily?'sessions':'weeks'}. Chart overlays are computed from ${daily?'saved daily bars':'saved event rows'}; the original database and analytical results are unchanged.</p>${typeof m.source==='string'&&/^https?:\/\//.test(m.source)?`<p><a href="${esc(m.source)}" target="_blank" rel="noopener">Source snapshot endpoint ↗</a></p>`:''}<p><a href="../weekly_liquidity_backtest.html" target="_blank" rel="noopener">Full research, audit and references ↗</a></p><small>Source data were frozen on 06 Sep 2026. Nothing is streamed live. This chart is reproducible offline.</small>`);
 }
 
 // UI wiring.
@@ -413,7 +413,7 @@ canvas.addEventListener('pointermove',e=>{
  const h=hitAt(p),tt=$('tooltip');
  if(h?.type==='zone'){const z=getCache().byId.get(h.id);tt.innerHTML=`<strong>${z.dir>0?'Bullish':'Bearish'} FVG${z.combo?' · after sweep':''}</strong>${price(z.lo)} – ${price(z.hi)}<small>50% CE ${price(z.ce)} · ${stateNames[zoneState(z,state.cursor)]}</small><small>Confirmed ${dateAt(z.i)} · click to inspect</small>`;}
  else if(h?.type==='sweep')tt.innerHTML=`<strong>${h.e[2]>0?'SSL':'BSL'} sweep · ${state.k}${unitShort()}</strong>Level ${price(h.e[3])}<small>${dateAt(h.e[0])} · click to replay this close</small>`;
- else if(h?.type==='range'){const r=scene.ranges.find(l=>l.id===h.id);tt.innerHTML=`<strong>${r.label}</strong>${price(r.price)}<small>Next-week reference · click to hold fixed</small>`;}
+ else if(h?.type==='range'){const r=scene.ranges.find(l=>l.id===h.id);tt.innerHTML=`<strong>${r.label}</strong>${price(r.price)}<small>Next-${unit()} reference · click to hold fixed</small>`;}
  tt.hidden=!h;if(h){tt.style.left=`${clamp(p.x+16,6,Math.max(6,canvas.clientWidth-260))}px`;tt.style.top=`${clamp(p.y-80,4,Math.max(4,canvas.clientHeight-110))}px`;}
  chart.draw();
 });
