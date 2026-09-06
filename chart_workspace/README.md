@@ -17,6 +17,10 @@ the template files are development inputs and are not meant to be opened.
 - The HTF Liquidity Proxy card identifies the selected completed weekly range
   in 1W and the prior continuous completed weekly range in 1D. Its BSL/SSL
   labels are price-level proxies, not evidence of resting orders.
+- Structure layers add PWH/PWL, PMH/PML, confirmed five-bar swing highs/lows,
+  and relative equal highs/lows within 0.10 × prior ATR14. Swing pivots appear
+  only after two right-side bars complete. These are learning overlays and are
+  not included in the frozen performance backtest.
 - Click a coloured FVG zone, a nearby level, or an amber sweep triangle.
 - Read the selected level's state and price distance in the side panel.
 - Use **Reference**, then click a price, for a custom measurement. This does

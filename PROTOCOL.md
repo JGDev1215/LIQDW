@@ -74,7 +74,23 @@ two-sided and excluded from directional rejection samples: their order is unknow
 Primary k=1 (prior-week high/low); other k are sensitivity cases, not optimization.
 Direction +1 after SSL rejection, -1 after BSL rejection.
 Breakout comparator: single-side breach with close strictly outside that boundary.
-No inferred fractal swings or retrospectively selected equal-high clusters.
+The frozen backtest does not use inferred fractal swings or retrospectively
+selected equal-high clusters. The interactive chart may display the following
+separate descriptive learning overlays; they do not alter event rows or results:
+
+- Confirmed swing high: a bar high strictly above the highs of the two bars on
+  each side. Confirmed swing low: the symmetric strict-low rule. The pivot is
+  not visible until the second right-side bar completes.
+- Relative equal highs/lows: consecutive confirmed same-side swings separated
+  by no more than 0.10 times the prior 14-bar simple mean true range. The outer
+  high/low is the displayed boundary. The pair remains visible only while that
+  boundary is not strictly breached by a later completed bar.
+- PWH/PWL and PMH/PML: high and low of the previous completed calendar week
+  and month. Frozen daily bars supply exact calendar periods when available;
+  weekly-only alternatives are explicitly approximate at month boundaries.
+
+These are repeatable OHLC location proxies, not observed resting liquidity,
+directional predictions, or additional backtest rules.
 
 Bullish FVG at t: L_t > H_(t-2), zone [H_(t-2),L_t]. Bearish FVG:
 H_t < L_(t-2), zone [H_t,L_(t-2)]. CE=(lower+upper)/2. Strict positive width;

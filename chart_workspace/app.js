@@ -2,11 +2,11 @@
 // Presentation only. The detector events and OHLC are frozen research inputs.
 (() => {
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const colors={bull:'#4dd4b0',bear:'#ee8691',range:'#e9bb6d',ref:'#89aeec',muted:'#8d9faf'};
+const colors={bull:'#4dd4b0',bear:'#ee8691',range:'#e9bb6d',ref:'#89aeec',muted:'#8d9faf',week:'#75a9d6',month:'#8f7fe8',equal:'#d78ad6'};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const main=['NQ_YAHOO','NDX','SP500','NQ_LOCAL_FIXED','STORA','MPS','ORELL','MATSUI','SUMITOMO','BNY','ED'];
 const labels={NQ_YAHOO:'NQ · futures · 2000+',NDX:'Nasdaq-100 · index · 1985+',SP500:'S&P 500 · HLC · 1962+',NQ_LOCAL_FIXED:'NQ · local fixed sample',STORA:'Stora Enso · origin 1288',MPS:'Monte dei Paschi · origin 1472',ORELL:'Orell Füssli · origin 1519',MATSUI:'Matsui Construction · origin 1586',SUMITOMO:'Sumitomo Metal Mining · origin 1590',BNY:'BNY · listing-history check',ED:'Consolidated Edison · listing check'};
-const state={asset:'NQ_YAHOO',tf:'weekly',cursor:0,span:104,fvgOn:true,sweepOn:true,rangeOn:true,filledOn:false,kind:'displacement',k:1,selected:null,reference:null,measure:false,hover:null,playing:false};
+const state={asset:'NQ_YAHOO',tf:'weekly',cursor:0,span:104,fvgOn:true,sweepOn:true,rangeOn:true,filledOn:false,kind:'displacement',k:1,structureMode:'all',selected:null,reference:null,measure:false,hover:null,playing:false};
 // Curated for visual clarity from the frozen detector output. These are not selected for profitability.
 const EXAMPLES=[
  {asset:'NQ_YAHOO',i:984,type:'sweep',rule:1,dir:1,k:4,reveal:4,span:30,title:'Sell-side liquidity sweep',summary:'The weekly low breaches a prior 4-week low, then the close returns above it.',look:['Find the amber prior-low line','Compare the wick with the close','The opposite boundary stays intact'],observed:'Four weeks later the close is 7,857.75, above both the 7,650.25 swept level and the 7,660.25 confirmation close.'},
@@ -110,6 +110,46 @@ function renderHTFLiquidity(){
  el.innerHTML=`<div class="htf-head"><span>HTF LIQUIDITY PROXY</span><span>${weekly?'1W SOURCE':'WEEKLY SOURCE'}</span></div><p class="htf-note">${span} · prior high/low proxy; not proof of resting orders</p><button class="htf-level" data-htf="high"><span><small>BSL · prior high</small><strong>${price(hi)}</strong></span><small>${Number.isFinite(scene.p)?pct((hi-scene.p)/scene.p):'—'}</small></button><button class="htf-level" data-htf="low"><span><small>SSL · prior low</small><strong>${price(lo)}</strong></span><small>${Number.isFinite(scene.p)?pct((lo-scene.p)/scene.p):'—'}</small></button>`;
  set('high',hi,'BSL',-1);set('low',lo,'SSL',1);
 }
+const monthKey=date=>date.slice(0,7);
+function weekKey(date){const d=new Date(`${date}T12:00:00Z`),day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);return d.toISOString().slice(0,10);}
+function periodLevels(){
+ const current=bars()[state.cursor],date=current?.[0];if(!date)return [];
+ let source,dailySource=DATA.daily[state.asset];
+ if(dailySource)source=dailySource.bars.filter(b=>b[0]<=date);
+ else source=bars().slice(0,state.cursor+1);
+ const valid=source.filter(b=>b[5]),curWeek=weekKey(date),curMonth=monthKey(date),levels=[];
+ const priorWeek=valid.filter(b=>weekKey(b[0])<curWeek),wk=priorWeek.length?weekKey(priorWeek.at(-1)[0]):null;
+ const priorMonth=valid.filter(b=>monthKey(b[0])<curMonth),mk=priorMonth.length?monthKey(priorMonth.at(-1)[0]):null;
+ const add=(group,highId,lowId,highLabel,lowLabel,col)=>{if(!group.length)return;levels.push({id:highId,type:'structure',subtype:'period',price:Math.max(...group.map(b=>b[2])),i:state.cursor,label:highLabel,side:1,col},{id:lowId,type:'structure',subtype:'period',price:Math.min(...group.map(b=>b[3])),i:state.cursor,label:lowLabel,side:-1,col});};
+ if(wk)add(priorWeek.filter(b=>weekKey(b[0])===wk),'pwh','pwl','PWH','PWL',colors.week);
+ if(mk)add(priorMonth.filter(b=>monthKey(b[0])===mk),'pmh','pml','PMH','PML',colors.month);
+ return levels;
+}
+function meanTR(bs,end,n=14){const tr=[];for(let i=Math.max(1,end-n);i<end;i++){if(!bs[i][5]||!bs[i-1][5])return null;tr.push(Math.max(bs[i][2]-bs[i][3],Math.abs(bs[i][2]-bs[i-1][4]),Math.abs(bs[i][3]-bs[i-1][4])));}return tr.length===n?tr.reduce((a,b)=>a+b,0)/n:null;}
+function swingLevels(){
+ const bs=bars(),c=state.cursor,all=[];
+ for(let i=2;i<=c-2;i++){
+  const w=bs.slice(i-2,i+3);if(w.length<5||w.some(b=>!b[5]))continue;
+  const h=bs[i][2],l=bs[i][3],high=w.every((b,j)=>j===2||h>b[2]),low=w.every((b,j)=>j===2||l<b[3]);
+  if(high)all.push({i,confirmed:i+2,side:1,price:h});if(low)all.push({i,confirmed:i+2,side:-1,price:l});
+ }
+ const active=s=>!bs.slice(s.confirmed+1,c+1).some(b=>b[5]&&(s.side>0?b[2]>s.price:b[3]<s.price));
+ const out=[];
+ for(const side of [1,-1]){
+  const same=all.filter(s=>s.side===side),live=same.filter(active).sort((a,b)=>b.i-a.i);
+  if(live[0])out.push({...live[0],id:side>0?'swh':'swl',type:'structure',subtype:'swing',label:side>0?'Swing high':'Swing low',col:colors.range});
+  const pairs=[];for(let j=1;j<same.length;j++){const a=same[j-1],b=same[j],atr=meanTR(bs,b.i);if(atr!==null&&Math.abs(a.price-b.price)<=.10*atr){const level=side>0?Math.max(a.price,b.price):Math.min(a.price,b.price),pair={i:b.i,confirmed:b.confirmed,side,price:level};if(active(pair))pairs.push(pair);}}
+  const eq=pairs.at(-1);if(eq)out.push({...eq,id:side>0?'eqh':'eql',type:'structure',subtype:'equal',label:side>0?'EQH':'EQL',col:colors.equal});
+ }
+ return out;
+}
+function structureLevels(){if(state.structureMode==='off')return [];const periods=periodLevels(),swings=swingLevels();return state.structureMode==='periods'?periods:state.structureMode==='swings'?swings:[...periods,...swings];}
+function renderStructureOutput(){
+ const el=$('structureOutput'),levels=scene.structure||[];if(!el)return;
+ const label={pwh:'Previous week high',pwl:'Previous week low',pmh:'Previous month high',pml:'Previous month low',swh:'Confirmed swing high',swl:'Confirmed swing low',eqh:'Relative equal highs',eql:'Relative equal lows'};
+ el.innerHTML=`<div class="structure-head"><span>STRUCTURE LIQUIDITY</span><span>${state.tf==='daily'?'1D':'1W'} CONFIRMED</span></div>${levels.length?`<div class="structure-grid">${levels.map(l=>`<button class="${l.subtype}" data-structure="${l.id}"><span>${label[l.id]||l.label}</span><strong>${price(l.price)}</strong></button>`).join('')}</div>`:'<div class="empty">Layer off or no confirmed level at this replay close.</div>'}`;
+ el.querySelectorAll('[data-structure]').forEach(button=>button.onclick=()=>{const l=levels.find(x=>x.id===button.dataset.structure);if(l)select({...l,formed:state.cursor});});
+}
 function makeScene(){
  const b=bars(),c=state.cursor,valid=b[c][5],p=valid?b[c][4]:null,start=Math.max(0,c-state.span+1),cs=getCache();
  const eligible=state.fvgOn?cs.zones.filter(z=>z.i<=c&&qualify(z)):[];
@@ -122,7 +162,7 @@ function makeScene(){
  const history=state.fvgOn&&state.filledOn?eligible.filter(z=>z.farAt!==null&&z.farAt<=c&&z.farAt>=start&&!shown.some(a=>a.id===z.id)).sort((a,b)=>b.farAt-a.farAt).slice(0,8):[];
  const rule=[1,4,13,52].indexOf(state.k);
  const sweeps=state.sweepOn?cs.sweeps.filter(e=>e[1]===rule&&e[0]>=start&&e[0]<=c):[];
- const ranges=rangeLevels();
+ const ranges=rangeLevels(),structure=structureLevels();
  const levels=[...ranges,...shown.filter(z=>!['far','unknown'].includes(zoneState(z,c))).map(z=>({id:z.id,type:'zone',price:z.ce,i:z.i,formed:z.i,lo:z.lo,hi:z.hi,dir:z.dir,label:`${z.dir>0?'Bullish':'Bearish'} FVG · CE`,z}))];
  const visible=b.slice(start,c+1).filter(x=>x[5]);
  let min=visible.length?Math.min(...visible.map(x=>x[3])):0,max=visible.length?Math.max(...visible.map(x=>x[2])):1;
@@ -131,7 +171,7 @@ function makeScene(){
  if(state.selected&&Number.isFinite(state.selected.price)){min=Math.min(min,state.selected.price);max=Math.max(max,state.selected.price);}
  if(state.reference&&Number.isFinite(state.reference.price)){min=Math.min(min,state.reference.price);max=Math.max(max,state.reference.price);}
  spread=Math.max(max-min,spread);
- return {start,end:c,p,valid,shown,history,sweeps,ranges,levels,activeCount:active.length,min:min-spread*.08,max:max+spread*.09,right:c+Math.max(8,Math.round(state.span*.12)),gapCount:b.slice(start,c+1).filter(x=>!x[5]).length};
+ return {start,end:c,p,valid,shown,history,sweeps,ranges,structure,levels,activeCount:active.length,min:min-spread*.08,max:max+spread*.09,right:c+Math.max(8,Math.round(state.span*.12)),gapCount:b.slice(start,c+1).filter(x=>!x[5]).length};
 }
 function safeSelection(){
  if(state.selected&&state.selected.formed>state.cursor){state.selected=null;state.reference=null;}
@@ -183,6 +223,9 @@ function selectionHTML(){
   if(zs==='unknown')details+='<p class="hint">Tracking stops at the first unavailable week.</p>';
  }else if(s.type==='sweep'){
   details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">${s.dir>0?'LOW SWEPT · CLOSED BACK ABOVE':'HIGH SWEPT · CLOSED BACK BELOW'}</span><div class="kv"><span>Confirmed</span><strong>${dateAt(s.i)}</strong></div><p class="hint">Prior ${s.k}-${unit()} ${s.dir>0?'low':'high'}. The opposite range boundary was not breached.</p>`;
+ }else if(s.type==='structure'){
+  const meaning=s.id==='eqh'?'Two confirmed swing highs within 0.10 × prior ATR14.':s.id==='eql'?'Two confirmed swing lows within 0.10 × prior ATR14.':s.id==='swh'||s.id==='swl'?'Five-bar pivot, visible only after two bars confirm it.':'High or low of the prior completed calendar period.';
+  details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">${s.label.toUpperCase()}</span><div class="kv"><span>Known by replay close</span><strong>${dateAt(state.cursor)}</strong></div><p class="hint">${meaning} This is a liquidity-location proxy, not proof of resting orders.</p>`;
  }else details=`<div class="zone-price">${price(s.price)}</div><span class="state-tag">FIXED SELECTED LEVEL</span><div class="kv"><span>Selected at close</span><strong>${dateAt(s.formed)}</strong></div><p class="hint">The selected level stays fixed during replay. The range overlay updates with each completed ${unit()}.</p>`;
  const r=state.reference;
  details+=`<div class="measurement"><div class="kv"><span>${r?.user?'Your reference':'Reference close'}</span><strong>${r?price(r.price):'Set on chart'}</strong></div>${r?`<div class="move">${signed(s.price-r.price)} <small style="font:10px var(--mono)">${['futures','index'].includes(assetClass())?'pts':esc(series().meta.currency)} (${pct((s.price-r.price)/r.price)})</small></div><p class="hint">Distance to ${s.type==='zone'?'50% CE':'selected level'} · ${dateAt(r.i)}</p>`:''}<div class="movement"><span>↔</span><em>${movement(s.price,s.formed)}</em></div></div>`;
@@ -252,6 +295,11 @@ const overlay={id:'liquidityOverlay',afterDraw(c){
   queueLabel(c.width<600?(r.side>0?'HIGH':'LOW'):r.label,clamp(py+(r.side>0?-9:10),top+10,bottom-10),colors.range,1);
   hits.push({type:'range',id:r.id,x1:Math.max(left,X(r.i)),x2:right,y1:py-5,y2:py+5});
  }
+ for(const l of scene.structure){
+  const py=Y(l.price),from=l.subtype==='swing'||l.subtype==='equal'?X(Math.max(scene.start,l.i)):left,col=l.col||colors.muted,dash=l.subtype==='period'?[9,5]:l.subtype==='equal'?[2,3]:[4,5];
+  if(py<top||py>bottom)continue;
+  line(from,py,right,py,col+'8f',l.subtype==='equal'?1.25:1,dash);queueLabel(l.label,clamp(py+(l.side>0?-10:11),top+10,bottom-10),col,1);hits.push({type:'structure',id:l.id,x1:Math.max(left,from),x2:right,y1:py-5,y2:py+5});
+ }
  const occupied=[];
  for(const l of queuedLabels.sort((a,b)=>a.priority-b.priority)){
   let py=l.py;const candidates=[0,18,-18,36,-36,54,-54,72,-72];
@@ -305,7 +353,7 @@ function render(){
  if(!chart){
   chart=new Chart($('priceChart'),{type:'scatter',data:{datasets:[{data:high,pointRadius:0},{data:low,pointRadius:0}]},plugins:[overlay],options:{responsive:true,maintainAspectRatio:false,animation:false,events:[],devicePixelRatio:Math.min(window.devicePixelRatio||1,2),layout:{padding:{left:14,right:8,top:13,bottom:1}},plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{type:'linear',min:scene.start-.7,max:scene.right,grid:{color:'#23313e77',drawTicks:false},border:{display:false},ticks:{color:'#758b9e',maxTicksLimit:8,font:{size:10},padding:10,callback(v){const i=Math.round(v);if(i<scene.start||i>state.cursor)return '';const dt=dateAt(i);return dt==='—'?'':new Date(dt+'T12:00:00Z').toLocaleDateString('en-GB',state.tf==='daily'?{day:'2-digit',month:'short',timeZone:'UTC'}:{month:'short',year:'2-digit',timeZone:'UTC'});}}},y:{position:'right',afterFit:scale=>{scale.width=82;},min:scene.min,max:scene.max,border:{display:false},grid:{color:'#23313e88',drawTicks:false},ticks:{color:'#8799a9',maxTicksLimit:9,includeBounds:false,font:{family:'ui-monospace',size:10},padding:10,callback:v=>Math.abs(v)>=1e6?`${number(v/1e6,1)}M`:number(v,Math.abs(v)<2?2:0)}}}}});
  }else{chart.data.datasets[0].data=high;chart.data.datasets[1].data=low;chart.options.scales.x.min=scene.start-.7;chart.options.scales.x.max=scene.right;chart.options.scales.y.min=scene.min;chart.options.scales.y.max=scene.max;chart.update('none');}
- renderHTFLiquidity();sidebar();renderLesson();const ev=navigationEvents();$('prevEvent').disabled=!ev.some(e=>e.i<state.cursor);$('nextEvent').disabled=!ev.some(e=>e.i>state.cursor);
+ renderHTFLiquidity();renderStructureOutput();sidebar();renderLesson();const ev=navigationEvents();$('prevEvent').disabled=!ev.some(e=>e.i<state.cursor);$('nextEvent').disabled=!ev.some(e=>e.i>state.cursor);
 }
 function navigationEvents(){
  const kind=$('eventKind').value,cs=getCache();
@@ -348,6 +396,7 @@ function examplesCatalog(){
 function guide(){
  openDrawer('Read the chart',`<span class="badge">COMPLETED BARS ONLY · 1W / 1D</span><p>Choose weekly or daily beside the instrument. Drag to rewind. Scroll to zoom. Click a coloured zone or a sweep triangle to inspect it. Use <b>↕ Reference</b>, then click the chart, to measure from your own price.</p>
  <div class="guide-card"><h3>Liquidity levels</h3><svg viewBox="0 0 320 100" role="img" aria-label="Price pierces a prior low, then closes back above it"><path d="M10 54H310" stroke="#e9bb6d" stroke-dasharray="6 4"/><path d="M35 25V50M65 34V54M95 15V45M170 17V83M210 19V47" stroke="#92b9ad" stroke-width="2"/><path d="M28 33h14v9H28zM58 41h14v7H58zM88 23h14v12H88zM163 30h14v14h-14zM203 25h14v13h-14z" fill="#92b9ad"/><text x="225" y="49" fill="#e9bb6d" font-size="11">prior low</text><text x="126" y="98" fill="#e9bb6d" font-size="10">SSL sweep ↑</text></svg><p>Range highs/lows are <b>proxies</b> for places orders may cluster. OHLC does not reveal resting orders or their quantity.</p><p>A <b>sell-side sweep (SSL)</b> trades below the prior range low, then closes above it. A <b>buy-side sweep (BSL)</b> trades above the prior range high, then closes below it.</p><small>The selected lookback is 1, 4, 13 or 52 prior completed bars: weeks on 1W, trading sessions on 1D. Strict breach and reclaim; equality and both-sided breaches are excluded. The current range lines include the completed replay bar and become the following bar's references.</small></div>
+ <div class="guide-card"><h3>Swings, equal highs/lows and period levels</h3><p>A <b>swing high</b> is higher than the two bars on each side; a <b>swing low</b> is lower than the two bars on each side. The pivot appears only after the two right-side bars have completed, so replay never labels it early.</p><p><b>Relative equal highs (EQH)</b> and <b>relative equal lows (EQL)</b> pair consecutive confirmed swings when their prices differ by no more than 0.10 × the prior 14-bar mean true range. The higher high or lower low is retained as the external boundary.</p><p><b>PWH/PWL</b> and <b>PMH/PML</b> are the previous completed calendar week and month highs/lows. They use frozen daily bars where available.</p><small>Only unswept confirmed swing and equal-high/low proxies are shown. These labels identify repeatable OHLC geometry; they do not reveal order quantity or guarantee a future draw.</small></div>
  <div class="guide-card"><h3>Fair value gap · FVG</h3><svg viewBox="0 0 320 115" role="img" aria-label="Three candles create a bullish FVG between candle one's high and candle three's low"><rect x="40" y="37" width="260" height="33" fill="#4dd4b0" opacity=".12"/><path d="M40 37H300M40 70H300" stroke="#4dd4b0" stroke-width="1"/><path d="M40 53.5H300" stroke="#4dd4b0" stroke-dasharray="4 4"/><path d="M60 70V105M130 22V94M200 6V37" stroke="#92b9ad" stroke-width="2"/><path d="M53 80h14v18H53zM123 28h14v55h-14zM193 12h14v19h-14z" fill="#92b9ad"/><text x="232" y="32" fill="#4dd4b0" font-size="10">near edge</text><text x="232" y="50" fill="#4dd4b0" font-size="10">50% CE</text><text x="232" y="83" fill="#4dd4b0" font-size="10">far edge</text></svg><p>A three-candle <b>price non-overlap</b>, confirmed only when candle 3 closes. This study's definition is geometric; it does not establish fair economic value or prove unfilled orders.</p><div class="formula">Bullish: Low[t] &gt; High[t−2]<br>Zone: High[t−2] … Low[t]<br>Bearish: High[t] &lt; Low[t−2]<br>Zone: High[t] … Low[t−2]<br>CE = (lower edge + upper edge) / 2</div><p><b>Displacement</b> requires the middle candle to move in the gap direction, have a body ≥ 0.5 × prior 14-bar mean true range, and span both zone edges. <b>Sweep → FVG</b> also requires a same-direction sweep 1–3 bars earlier.</p></div>
  <div class="guide-card"><h3>What the states mean</h3><p><b>Unreached → near edge → CE → far edge.</b> Tracking starts on the bar after confirmation. A bar's range can reach or pass several thresholds at once. Filled zones shows far-edge-reached history faintly; this is not evidence of executable fills.</p><p>Four nearest active zones appear by default. A selected older zone can appear as a fifth. An unavailable bar ends known lifecycle tracking. HLC-only bars have a close tick and no invented candle body.</p></div>
  <div class="guide-card"><h3>Toward or away</h3><p>The blue bracket measures a price difference. The selection panel compares consecutive closes against the same fixed target. Crossing a level is shown separately. No direction or trade outcome is forecast.</p><small>NQ CE values may sit between executable ticks; the mathematical midpoint is retained. These are descriptive overlays, not entry/stop instructions. Guided examples and saved backtest statistics are weekly.</small></div><p><b>Keyboard:</b> ← / → one bar · space play/pause · + / − zoom · ? guide.</p>`);
@@ -369,7 +418,7 @@ function sources(){
  ${state.asset==='SP500'?'<div class="note"><p>Usable high/low history begins in 1962. Earlier close-copy bars cannot support sweeps or FVGs. Before 26 Apr 1982, opening-price provenance is insufficient: those bars are HLC-only and displacement detection is disabled.</p></div>':state.asset==='SP500_MODERN'?'<div class="note"><p>This modern S&P 500 series begins at the 26 Apr 1982 opening-price reliability boundary. Earlier history is not embedded in this series.</p></div>':''}
  ${assetClass()==='futures'?'<p>Continuation data can contain roll artifacts. These overlays are not a reconstruction of executable individual contracts, spreads or transaction costs.</p>':''}
  ${stock?`<p>${m.origin?`Company origin: <b>${esc(m.origin)}</b>. `:''}The five early-origin companies are research candidates, not a certified world ranking of the oldest continuously traded shares. Company age is not the length of available price history.</p><p>Raw and adjusted sensitivity series are distinct choices. Corporate actions can distort raw prices. No-trade and invalid weeks are omitted from signal detection; the survivors-only sample is not representative of all historical stocks.</p>`:''}
- <p>Blank bands represent invalid or unavailable HLC ${daily?'sessions':'weeks'}. Chart overlays are computed from ${daily?'saved daily bars':'saved event rows'}; the original database and analytical results are unchanged.</p>${typeof m.source==='string'&&/^https?:\/\//.test(m.source)?`<p><a href="${esc(m.source)}" target="_blank" rel="noopener">Source snapshot endpoint ↗</a></p>`:''}<p><a href="../weekly_liquidity_backtest.html" target="_blank" rel="noopener">Full research, audit and references ↗</a></p><small>Source data were frozen on 06 Sep 2026. Nothing is streamed live. This chart is reproducible offline.</small>`);
+ <p>Blank bands represent invalid or unavailable HLC ${daily?'sessions':'weeks'}. Chart overlays are computed from ${daily?'saved daily bars':'saved event rows'}; the original database and analytical results are unchanged.</p><p>Previous-week and previous-month levels use frozen daily bars when available. Series without daily snapshots use their weekly aggregates, so month boundaries are approximate for those alternatives.</p>${typeof m.source==='string'&&/^https?:\/\//.test(m.source)?`<p><a href="${esc(m.source)}" target="_blank" rel="noopener">Source snapshot endpoint ↗</a></p>`:''}<p><a href="../weekly_liquidity_backtest.html" target="_blank" rel="noopener">Full research, audit and references ↗</a></p><small>Source data were frozen on 06 Sep 2026. Nothing is streamed live. This chart is reproducible offline.</small>`);
 }
 
 // UI wiring.
@@ -380,6 +429,7 @@ $('timeframe').onchange=e=>switchTimeframe(e.target.value);
 for(const [id,key] of [['toggleFvg','fvgOn'],['toggleSweeps','sweepOn'],['toggleRange','rangeOn'],['toggleFilled','filledOn']])$(id).onclick=()=>{state[key]=!state[key];button(id,state[key]);if(id==='toggleFvg'&&!state[key]&&state.selected?.type==='zone'){state.selected=null;state.reference=null;}render();};
 $('fvgKind').onchange=e=>{state.kind=e.target.value;if(state.selected?.type==='zone'){state.selected=null;state.reference=null;}render();};
 $('lookback').onchange=e=>{state.k=+e.target.value;render();};
+$('structureLayer').onchange=e=>{state.structureMode=e.target.value;if(state.selected?.type==='structure'){state.selected=null;state.reference=null;}render();};
 $('measureBtn').onclick=()=>{state.measure=!state.measure;button('measureBtn',state.measure);if(state.measure)toast('Click a price on the chart to set your reference');};
 $('zoomIn').onclick=()=>zoom(.78);$('zoomOut').onclick=()=>zoom(1.3);
 $('resetView').onclick=()=>{exitLesson();state.span=104;state.selected=null;state.reference=null;state.measure=false;button('measureBtn',false);render();};
@@ -396,12 +446,12 @@ $('lessonReveal').onclick=()=>{const ex=EXAMPLES[lesson.index];if(state.asset===
 $('lessonExit').onclick=()=>{exitLesson();render();};
 $('closeDrawer').onclick=()=>$('drawer').close();$('drawer').onclick=e=>{if(e.target===$('drawer')&&e.clientX<$('drawer').getBoundingClientRect().left)$('drawer').close();};
 function pos(e){const r=$('priceChart').getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
-function hitAt(p){return [...hits].sort((a,b)=>({sweep:0,range:1,zone:2}[a.type]-{sweep:0,range:1,zone:2}[b.type])).find(h=>p.x>=h.x1&&p.x<=h.x2&&p.y>=h.y1&&p.y<=h.y2);}
+function hitAt(p){const priority={sweep:0,structure:1,range:2,zone:3};return [...hits].sort((a,b)=>priority[a.type]-priority[b.type]).find(h=>p.x>=h.x1&&p.x<=h.x2&&p.y>=h.y1&&p.y<=h.y2);}
 function onClick(p){
  const area=chart.chartArea;if(p.x<area.left||p.x>area.right||p.y<area.top||p.y>area.bottom)return;
  if(state.measure){const i=clamp(Math.round(chart.scales.x.getValueForPixel(p.x)),scene.start,state.cursor);state.reference={price:chart.scales.y.getValueForPixel(p.y),i,user:true};state.measure=false;button('measureBtn',false);render();toast('Reference set · click a zone or level to measure');return;}
  const hit=hitAt(p);if(!hit)return;
- if(hit.type==='zone')selectZone(hit.id);else if(hit.type==='sweep'){stop();selectSweep(hit.e);}else{const r=scene.ranges.find(x=>x.id===hit.id);if(r)select(r);}
+ if(hit.type==='zone')selectZone(hit.id);else if(hit.type==='sweep'){stop();selectSweep(hit.e);}else if(hit.type==='structure'){const l=scene.structure.find(x=>x.id===hit.id);if(l)select({...l,formed:state.cursor});}else{const r=scene.ranges.find(x=>x.id===hit.id);if(r)select(r);}
 }
 const canvas=$('priceChart');
 canvas.addEventListener('pointerdown',e=>{const p=pos(e);pointer={...p,cursor:state.cursor,drag:false};canvas.setPointerCapture(e.pointerId);});
@@ -413,6 +463,7 @@ canvas.addEventListener('pointermove',e=>{
  const h=hitAt(p),tt=$('tooltip');
  if(h?.type==='zone'){const z=getCache().byId.get(h.id);tt.innerHTML=`<strong>${z.dir>0?'Bullish':'Bearish'} FVG${z.combo?' · after sweep':''}</strong>${price(z.lo)} – ${price(z.hi)}<small>50% CE ${price(z.ce)} · ${stateNames[zoneState(z,state.cursor)]}</small><small>Confirmed ${dateAt(z.i)} · click to inspect</small>`;}
  else if(h?.type==='sweep')tt.innerHTML=`<strong>${h.e[2]>0?'SSL':'BSL'} sweep · ${state.k}${unitShort()}</strong>Level ${price(h.e[3])}<small>${dateAt(h.e[0])} · click to replay this close</small>`;
+ else if(h?.type==='structure'){const l=scene.structure.find(x=>x.id===h.id);tt.innerHTML=`<strong>${l.label}</strong>${price(l.price)}<small>Confirmed liquidity proxy · click to inspect</small>`;}
  else if(h?.type==='range'){const r=scene.ranges.find(l=>l.id===h.id);tt.innerHTML=`<strong>${r.label}</strong>${price(r.price)}<small>Next-${unit()} reference · click to hold fixed</small>`;}
  tt.hidden=!h;if(h){tt.style.left=`${clamp(p.x+16,6,Math.max(6,canvas.clientWidth-260))}px`;tt.style.top=`${clamp(p.y-80,4,Math.max(4,canvas.clientHeight-110))}px`;}
  chart.draw();

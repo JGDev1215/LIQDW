@@ -124,15 +124,47 @@
       ]
     },
     {
-      "name": "Daily view exposes verified OHLC candlesticks and weekly HTF liquidity output",
+      "name": "Daily view exposes OHLC candles, HTF periods, confirmed swings and relative equal highs/lows",
       "status": "PASS",
       "details": {
+        "cursor": 6598,
         "validOHLC": true,
         "header": "2026-09-04O29,505.00H29,704.50L29,468.00C29,565.25",
         "aria": "Daily OHLC price chart with candlesticks, liquidity sweeps and FVG zones",
         "legend": "OHLC candles",
-        "htf": "HTF LIQUIDITY PROXYWEEKLY SOURCEprior 1 completed week · prior high/low proxy; not proof of resting ordersBSL · prior high29,811.50+0.83%SSL · prior low28,946.75-2.09%"
+        "htf": "HTF LIQUIDITY PROXYWEEKLY SOURCEprior 1 completed week · prior high/low proxy; not proof of resting ordersBSL · prior high29,811.50+0.83%SSL · prior low28,946.75-2.09%",
+        "structureText": "STRUCTURE LIQUIDITY1D CONFIRMEDPrevious week high29,811.50Previous week low28,946.75Previous month high30,343.00Previous month low28,313.50Confirmed swing high29,811.50Confirmed swing low28,927.25Relative equal lows28,927.25",
+        "structure": [
+          {
+            "id": "pwh"
+          },
+          {
+            "id": "pwl"
+          },
+          {
+            "id": "pmh"
+          },
+          {
+            "id": "pml"
+          },
+          {
+            "id": "swh",
+            "confirmed": 6595
+          },
+          {
+            "id": "swl",
+            "confirmed": 6598
+          },
+          {
+            "id": "eql",
+            "confirmed": 6598
+          }
+        ]
       }
+    },
+    {
+      "name": "Structure layer control separates period, swing/equal and off views",
+      "status": "PASS"
     },
     {
       "name": "1D unavailable local/sensitivity series are disabled without fabrication",

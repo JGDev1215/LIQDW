@@ -11,6 +11,9 @@ the price chart with minimal reading.
       history remains explicit and does not receive fabricated candle bodies.
 - [x] HTF liquidity output uses completed weekly high/low proxies and refuses
       to bridge an unavailable weekly bar.
+- [x] PWH/PWL, PMH/PML, confirmed five-bar swing highs/lows and ATR-normalised
+      relative equal highs/lows are charted without future-bar confirmation
+      leakage. These overlays remain separate from the frozen backtest.
 - [x] Weekly prices occupy the main screen; FVGs, CE, range levels and sweeps
       appear directly on price. Default overlays are bounded to limit clutter.
 - [x] Selected-zone state, exact prices, custom-reference distances and
