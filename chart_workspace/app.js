@@ -291,7 +291,7 @@ const overlay={id:'liquidityOverlay',afterDraw(c){
 
 function render(){
  safeSelection();scene=makeScene();const d=series(),b=bars();
- const daily=state.tf==='daily';$('timeframe').value=state.tf;$('brandTf').textContent=daily?'1D':'1W';$('dateLabel').textContent=daily?'Session date':'Week ending';$('footerTf').textContent=daily?'Daily':'Weekly';
+ const daily=state.tf==='daily';$('timeframe').value=state.tf;$('brandTf').textContent=daily?'1D':'1W';$('dateLabel').textContent=daily?'Session date':'Week ending';$('footerTf').textContent=daily?'Daily':'Weekly';$('priceChart').setAttribute('aria-label',`${daily?'Daily':'Weekly'} OHLC price chart with ${daily?'candlesticks':'candles'}, liquidity sweeps and FVG zones`);$('candleLegend').textContent=daily?'OHLC candles':'OHLC candles';
  [...$('lookback').options].forEach(o=>o.textContent=`${o.value} ${daily?(o.value==='1'?'session':'sessions'):(o.value==='1'?'week':'weeks')}`);
  $('chartSymbol').textContent=d.meta.symbol;$('chartBasis').textContent=assetClass()==='index'?'cash index':assetClass()==='futures'?'futures continuation':d.meta.currency+' · equity';headerOHLC(state.cursor);
  $('date').min=b[0][0];$('date').max=b.at(-1)[0];$('date').value=b[state.cursor][0];$('timeline').max=b.length-1;$('timeline').value=state.cursor;
